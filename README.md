@@ -5,7 +5,6 @@
 This repository is a **complete, hands-on lab** to master **Microsoft Azure DevOps**:
 
 - A one-container **DevOps Box** that runs an Azure Pipelines **self-hosted agent** and **SSHD** with `supervisord`.
-- A **MkDocs** docs site — the **Labs** are your workshop guide.
 - Scripts to split a monorepo (**HDP**) into **Azure-1** (Folder1 + Folder2) and **Azure-2** (Folder3) **preserving history**.
 - Sample **YAML pipelines** with **path filters** and secure defaults.
 
