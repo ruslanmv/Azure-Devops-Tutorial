@@ -1,0 +1,12 @@
+trigger:
+  branches: { include: [ main ] }
+  paths:    { include: [ 'Folder1/*', 'Folder2/*' ] }
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+container: mcr.microsoft.com/dotnet/sdk:8.0
+
+steps:
+- script: dotnet --info
+- script: echo "Hello from Azure-1 (Folder1 + Folder2)"

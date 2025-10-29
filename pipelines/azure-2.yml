@@ -1,0 +1,9 @@
+trigger:
+  branches: { include: [ main ] }
+  paths:    { include: [ 'Folder3/*' ] }
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- script: echo "Hello from Azure-2 (Folder3)"

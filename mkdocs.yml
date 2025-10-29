@@ -1,0 +1,28 @@
+site_name: Azure DevOps Tutorial
+site_description: A complete, hands-on workshop with a one-container DevOps Box, repo splits, and modern pipelines.
+site_url: http://127.0.0.1:8000
+repo_url: https://github.com/your-org/Azure-Devops-Tutorial
+theme:
+  name: material
+  features:
+    - navigation.expand
+    - navigation.sections
+    - content.code.copy
+    - content.action.edit
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
+nav:
+  - Home: index.md
+  - Labs:
+      - "01 — Prerequisites": labs/01-prereqs.md
+      - "02 — Project & Repos": labs/02-create-project-and-repos.md
+      - "03 — Azure DevOps Server (Optional)": labs/03-optional-azure-devops-server-local.md
+      - "04 — Self-Hosted Agent (Local)": labs/04-self-hosted-agent-local.md
+      - "05 — Self-Hosted Agent (Docker)": labs/05-self-hosted-agent-docker.md
+      - "06 — Split HDP into Azure-1 & Azure-2": labs/06-split-hdp-into-azure1-azure2.md
+      - "07 — Pipelines (Azure-1)": labs/07-pipelines-azure1.md
+      - "08 — Pipelines (Azure-2)": labs/08-pipelines-azure2.md
+      - "09 — Best Practices": labs/09-best-practices.md
+      - "10 — Troubleshooting": labs/10-troubleshooting.md

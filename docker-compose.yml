@@ -1,0 +1,22 @@
+version: "3.9"
+services:
+  azdo-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: azdo-agent
+    restart: unless-stopped
+    environment:
+      AZP_URL: "${AZP_URL}"
+      AZP_TOKEN: "${AZP_TOKEN}"
+      AZP_POOL: "${AZP_POOL}"
+      AZP_AGENT_NAME: "${AZP_AGENT_NAME}"
+      AZP_WORK_DIR: "${AZP_WORK_DIR}"
+      SSH_PASSWORD: "${SSH_PASSWORD}"
+      # SSH_PUBLIC_KEY: "${SSH_PUBLIC_KEY}"
+      # SSH_DISABLE_PASSWORD: "${SSH_DISABLE_PASSWORD}"
+    ports:
+      - "127.0.0.1:2222:22"
+    volumes:
+      - ./_agent_work:/azp/agent/_work
+      - ./_agent_logs:/azp/agent/_diag
