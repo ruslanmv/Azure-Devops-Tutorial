@@ -43,6 +43,26 @@ Everything here is **copy‑pasteable** and **works locally**.
 
 ---
 
+## 0) What you need
+
+* A **Microsoft account** (e.g., Outlook/Hotmail).
+* **Git** and a shell (PowerShell 7+ or Bash).
+* (Optional) **Docker** if you want to try the self‑hosted agent container.
+
+---
+
+## 1) Create your free Azure DevOps **organization**
+
+1. Go to **[https://dev.azure.com](https://dev.azure.com)** and sign in.
+2. Click **New organization** (or it will prompt you automatically on first sign‑in).
+3. Pick a **name** (e.g., `yourname-devops`) and a **region** → Create.
+
+> You now have a personal Azure DevOps **organization**. Everything below happens inside it.
+
+---
+
+
+
 ## Lab 01 — Prerequisites (Zero‑to‑Hero)
 
 Install on your workstation:
