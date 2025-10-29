@@ -486,6 +486,8 @@ Projects are containers for your work. Each project has its own repositories, pi
    - Click **Create**
    - Wait a few seconds for Azure DevOps to provision your project
 
+![](assets/2025-10-29-21-55-49.png)
+
 ### Step 2: Create Multiple Repositories
 
 By default, your project has one repository (same name as project). We need two separate repos for our split-repository scenario.
@@ -494,6 +496,7 @@ By default, your project has one repository (same name as project). We need two 
    - In your project, click **Repos** in the left sidebar
    - You'll see the default repository
 
+![](assets/2025-10-29-21-56-31.png)
 2. **Create the first repository: Azure-1**
    - Click the repository dropdown at the top (shows current repo name)
    - Select **+ New repository**
@@ -501,7 +504,7 @@ By default, your project has one repository (same name as project). We need two 
    - **Type**: Git
    - ✅ Check "Add a README" (this initializes the repo)
    - Click **Create**
-
+![](assets/2025-10-29-22-00-24.png)
 3. **Create the second repository: Azure-2**
    - Repeat the process:
    - Click repository dropdown → **+ New repository**
@@ -515,6 +518,7 @@ Now you have three repositories:
 - `Azure-1` (will contain Folder1 and Folder2)
 - `Azure-2` (will contain Folder3)
 
+![](assets/2025-10-29-22-03-27.png)
 ### Step 3: Get Repository URLs
 
 You'll need these URLs later for pushing code.
@@ -531,7 +535,15 @@ You'll need these URLs later for pushing code.
 https://YOUR-ORG@dev.azure.com/YOUR-ORG/PROJECT-NAME/_git/REPO-NAME
 ```
 
+![](assets/2025-10-29-22-04-58.png)
 ---
+
+In my example case:
+
+```
+https://Azure-Data-Science@dev.azure.com/Azure-Data-Science/HDP-Labs/_git/Azure-1
+https://Azure-Data-Science@dev.azure.com/Azure-Data-Science/HDP-Labs/_git/Azure-2
+```
 
 ## Building the DevOps Box
 
@@ -732,8 +744,6 @@ Docker Compose orchestrates our container. It defines what to build and how to r
 Create `docker-compose.yml`:
 
 ```yaml
-version: "3.9"
-
 # Define our services (containers)
 services:
   # Our main service: the Azure DevOps agent with SSH
@@ -798,6 +808,8 @@ The Dockerfile defines what goes into our container image. This is where the mag
 Create `Dockerfile`:
 
 ```dockerfile
+# syntax=docker/dockerfile:1.6
+
 # Start from Ubuntu 22.04 LTS (Long Term Support)
 FROM ubuntu:22.04
 
@@ -808,6 +820,15 @@ ENV DEBIAN_FRONTEND=noninteractive
 ARG USERNAME=devops
 ARG USER_UID=1000
 ARG USER_GID=1000
+
+# (Optional) pass corporate proxies at build time:
+#   docker compose build --build-arg HTTP_PROXY=http://... --build-arg HTTPS_PROXY=http://... --build-arg NO_PROXY=localhost,127.0.0.1
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+ARG NO_PROXY
+ENV http_proxy=${HTTP_PROXY}
+ENV https_proxy=${HTTPS_PROXY}
+ENV no_proxy=${NO_PROXY}
 
 # ============================================
 # STEP 1: Install base system packages
@@ -847,10 +868,31 @@ RUN groupadd --gid ${USER_GID} ${USERNAME} && \
     echo "${USERNAME} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # ============================================
-# STEP 3: Install Azure CLI
+# STEP 3: Install Azure CLI (robust: try apt repo via host network & IPv4; fallback to pip if DNS to packages.microsoft.com fails)
 # ============================================
-# Useful for Azure operations in pipelines
-RUN curl -sL https://aka.ms/InstallAzureCLIDeb | bash
+# Removed the problematic --network=host option.
+RUN bash -euxo pipefail <<'EOF'
+apt-get update
+apt-get install -y --no-install-recommends ca-certificates curl gnupg lsb-release python3 python3-pip
+echo 'Acquire::ForceIPv4 "true";' > /etc/apt/apt.conf.d/99force-ipv4
+mkdir -p /etc/apt/keyrings
+if curl -fsSL4 --retry 5 --retry-connrefused --connect-timeout 10 https://packages.microsoft.com/keys/microsoft.asc \
+   | gpg --dearmor -o /etc/apt/keyrings/microsoft.gpg; then
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/azure-cli/ $(lsb_release -cs) main" \
+    > /etc/apt/sources.list.d/azure-cli.list
+  apt-get update
+  if apt-get install -y --no-install-recommends azure-cli; then
+    echo "Azure CLI installed via Microsoft apt repo."
+  else
+    echo "Azure CLI apt install failed; falling back to pip."
+    pip3 install --no-cache-dir azure-cli
+  fi
+else
+  echo "Could not resolve/download from packages.microsoft.com; installing azure-cli via pip."
+  pip3 install --no-cache-dir azure-cli
+fi
+rm -rf /var/lib/apt/lists/*
+EOF
 
 # ============================================
 # STEP 4: Configure SSH server
@@ -1190,8 +1232,9 @@ A Makefile provides convenient shortcuts for common commands. Instead of typing 
 Create `Makefile`:
 
 ```make
-# Docker Compose command
-DOCKER_COMPOSE := docker compose
+# Docker Compose command (defaults to classic `docker-compose`, falls back to `docker compose`)
+# You can override via environment: `make DOCKER_COMPOSE="docker compose" up`
+DOCKER_COMPOSE ?= $(shell if command -v docker-compose >/dev/null 2>&1; then echo docker-compose; else echo docker compose; fi)
 
 # Service name from docker-compose.yml
 SERVICE := azdo-agent
@@ -1204,26 +1247,28 @@ MKDOCS := $(VENV)/bin/mkdocs
 # Default target: show help
 .PHONY: help
 help:
-    @echo "Azure DevOps Tutorial - Available Commands"
-    @echo "==========================================="
-    @echo
-    @printf "%-16s %s\n" \
-      "make env" "Create .env file from template (required first step)" \
-      "make build" "Build the Docker image" \
-      "make up" "Start container in background" \
-      "make down" "Stop and remove container" \
-      "make restart" "Restart the container" \
-      "make logs" "Tail logs from the agent" \
-      "make ps" "Show running containers" \
-      "make ssh" "SSH into the container (devops@localhost:2222)" \
-      "make rebuild" "Force rebuild without cache" \
-      "make clean" "Stop container and remove volumes" \
-      "make fresh" "Complete reset (clean + delete work directories)" \
-      "make docs-install" "Install MkDocs for documentation" \
-      "make docs-serve" "Serve docs at http://127.0.0.1:8000" \
-      "make docs-build" "Build static documentation" \
-      "make docs-clean" "Remove documentation environment"
-    @echo
+	@echo "Azure DevOps Tutorial - Available Commands"
+	@echo "==========================================="
+	@echo
+	@printf "%-16s %s\n" \
+	  "make env" "Create .env file from template (required first step)" \
+	  "make build" "Build the Docker image" \
+	  "make up" "Start container in background" \
+	  "make down" "Stop and remove container" \
+	  "make restart" "Restart the container" \
+	  "make logs" "Tail logs from the agent" \
+	  "make ps" "Show running containers" \
+	  "make ssh" "SSH into the container (devops@localhost:2222)" \
+	  "make rebuild" "Force rebuild without cache" \
+	  "make clean" "Stop and remove container and volumes" \
+	  "make fresh" "Complete reset (clean + delete work directories)" \
+	  "make docs-install" "Install MkDocs for documentation" \
+	  "make docs-serve" "Serve docs at http://127.0.0.1:8000" \
+	  "make docs-build" "Build static documentation" \
+	  "make docs-clean" "Remove documentation environment" \
+	  "make compose-cmd" "Show which Compose command is in use"
+	@echo
+	@echo "Using Compose command: $(DOCKER_COMPOSE)"
 
 # ============================================
 # Core Docker Commands
@@ -1232,36 +1277,36 @@ help:
 # Create .env from template if it doesn't exist
 .PHONY: env
 env:
-    @if [ ! -f .env ]; then \
-        cp .env.example .env && \
-        echo "✓ Created .env from .env.example"; \
-        echo "⚠️  IMPORTANT: Edit .env and add your Azure DevOps credentials!"; \
-    else \
-        echo "✓ .env file already exists"; \
-    fi
+	@if [ ! -f .env ]; then \
+		cp .env.example .env && \
+		echo "✓ Created .env from .env.example"; \
+		echo "⚠️  IMPORTANT: Edit .env and add your Azure DevOps credentials!"; \
+	else \
+		echo "✓ .env file already exists"; \
+	fi
 
 # Build the Docker image
 .PHONY: build
 build: env
-    @echo "Building DevOps Box image..."
-    $(DOCKER_COMPOSE) build
+	@echo "Building DevOps Box image..."
+	$(DOCKER_COMPOSE) build
 
 # Start container in background
 .PHONY: up
 up: env
-    @echo "Starting DevOps Box..."
-    $(DOCKER_COMPOSE) up -d
-    @echo "✓ DevOps Box is running!"
-    @echo "  - Check status: make ps"
-    @echo "  - View logs: make logs"
-    @echo "  - SSH access: make ssh"
+	@echo "Starting DevOps Box..."
+	$(DOCKER_COMPOSE) up -d
+	@echo "✓ DevOps Box is running!"
+	@echo "  - Check status: make ps"
+	@echo "  - View logs: make logs"
+	@echo "  - SSH access: make ssh"
 
 # Stop and remove container
 .PHONY: down
 down:
-    @echo "Stopping DevOps Box..."
-    $(DOCKER_COMPOSE) down
-    @echo "✓ DevOps Box stopped"
+	@echo "Stopping DevOps Box..."
+	$(DOCKER_COMPOSE) down
+	@echo "✓ DevOps Box stopped"
 
 # Restart container
 .PHONY: restart
@@ -1270,40 +1315,40 @@ restart: down up
 # Tail logs (Ctrl+C to exit)
 .PHONY: logs
 logs:
-    @echo "Showing logs (Ctrl+C to exit)..."
-    $(DOCKER_COMPOSE) logs -f $(SERVICE)
+	@echo "Showing logs (Ctrl+C to exit)..."
+	$(DOCKER_COMPOSE) logs -f $(SERVICE)
 
 # Show container status
 .PHONY: ps
 ps:
-    $(DOCKER_COMPOSE) ps
+	$(DOCKER_COMPOSE) ps
 
 # SSH into the container
 .PHONY: ssh
 ssh:
-    @echo "Connecting via SSH (password from .env)..."
-    @echo "Default password: changeMe123"
-    ssh devops@localhost -p 2222
+	@echo "Connecting via SSH (password from .env)..."
+	@echo "Default password: changeMe123"
+	ssh devops@localhost -p 2222
 
 # Force rebuild without cache
 .PHONY: rebuild
 rebuild: env
-    @echo "Rebuilding from scratch (no cache)..."
-    $(DOCKER_COMPOSE) build --no-cache
+	@echo "Rebuilding from scratch (no cache)..."
+	$(DOCKER_COMPOSE) build --no-cache
 
 # Clean: stop and remove volumes
 .PHONY: clean
 clean:
-    @echo "Cleaning up containers and volumes..."
-    $(DOCKER_COMPOSE) down -v || true
-    @echo "✓ Cleanup complete"
+	@echo "Cleaning up containers and volumes..."
+	$(DOCKER_COMPOSE) down -v || true
+	@echo "✓ Cleanup complete"
 
 # Fresh start: clean everything including work directories
 .PHONY: fresh
 fresh: clean
-    @echo "Removing agent work and log directories..."
-    rm -rf _agent_work _agent_logs || true
-    @echo "✓ Fresh start - all data removed"
+	@echo "Removing agent work and log directories..."
+	rm -rf _agent_work _agent_logs || true
+	@echo "✓ Fresh start - all data removed"
 
 # ============================================
 # Documentation Commands (Optional)
@@ -1311,28 +1356,33 @@ fresh: clean
 
 .PHONY: docs-install
 docs-install:
-    @echo "Setting up documentation environment..."
-    @if [ ! -d $(VENV) ]; then $(PYTHON) -m venv $(VENV); fi
-    $(VENV)/bin/pip install --upgrade pip
-    $(VENV)/bin/pip install mkdocs mkdocs-material
-    @echo "✓ Documentation tools installed"
+	@echo "Setting up documentation environment..."
+	@if [ ! -d $(VENV) ]; then $(PYTHON) -m venv $(VENV); fi
+	$(VENV)/bin/pip install --upgrade pip
+	$(VENV)/bin/pip install mkdocs mkdocs-material
+	@echo "✓ Documentation tools installed"
 
 .PHONY: docs-serve
 docs-serve: docs-install
-    @echo "Starting documentation server at http://127.0.0.1:8000"
-    $(MKDOCS) serve -a 127.0.0.1:8000
+	@echo "Starting documentation server at http://127.0.0.1:8000"
+	$(MKDOCS) serve -a 127.0.0.1:8000
 
 .PHONY: docs-build
 docs-build: docs-install
-    @echo "Building documentation..."
-    $(MKDOCS) build
-    @echo "✓ Documentation built in ./site directory"
+	@echo "Building documentation..."
+	$(MKDOCS) build
+	@echo "✓ Documentation built in ./site directory"
 
 .PHONY: docs-clean
 docs-clean:
-    @echo "Removing documentation environment..."
-    rm -rf $(VENV) site
-    @echo "✓ Documentation cleanup complete"
+	@echo "Removing documentation environment..."
+	rm -rf $(VENV) site
+	@echo "✓ Documentation cleanup complete"
+
+# Utility: reveal which compose command is selected
+.PHONY: compose-cmd
+compose-cmd:
+	@echo "Using Compose command: $(DOCKER_COMPOSE)"
 ```
 
 **Using the Makefile:**
