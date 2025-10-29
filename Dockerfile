@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1.6
+
 # Start from Ubuntu 22.04 LTS (Long Term Support)
 FROM ubuntu:22.04
 
@@ -8,6 +10,15 @@ ENV DEBIAN_FRONTEND=noninteractive
 ARG USERNAME=devops
 ARG USER_UID=1000
 ARG USER_GID=1000
+
+# (Optional) pass corporate proxies at build time:
+#   docker compose build --build-arg HTTP_PROXY=http://... --build-arg HTTPS_PROXY=http://... --build-arg NO_PROXY=localhost,127.0.0.1
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+ARG NO_PROXY
+ENV http_proxy=${HTTP_PROXY}
+ENV https_proxy=${HTTPS_PROXY}
+ENV no_proxy=${NO_PROXY}
 
 # ============================================
 # STEP 1: Install base system packages
@@ -47,10 +58,31 @@ RUN groupadd --gid ${USER_GID} ${USERNAME} && \
     echo "${USERNAME} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # ============================================
-# STEP 3: Install Azure CLI
+# STEP 3: Install Azure CLI (robust: try apt repo via host network & IPv4; fallback to pip if DNS to packages.microsoft.com fails)
 # ============================================
-# Useful for Azure operations in pipelines
-RUN curl -sL https://aka.ms/InstallAzureCLIDeb | bash
+# Removed the problematic --network=host option.
+RUN bash -euxo pipefail <<'EOF'
+apt-get update
+apt-get install -y --no-install-recommends ca-certificates curl gnupg lsb-release python3 python3-pip
+echo 'Acquire::ForceIPv4 "true";' > /etc/apt/apt.conf.d/99force-ipv4
+mkdir -p /etc/apt/keyrings
+if curl -fsSL4 --retry 5 --retry-connrefused --connect-timeout 10 https://packages.microsoft.com/keys/microsoft.asc \
+   | gpg --dearmor -o /etc/apt/keyrings/microsoft.gpg; then
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/azure-cli/ $(lsb_release -cs) main" \
+    > /etc/apt/sources.list.d/azure-cli.list
+  apt-get update
+  if apt-get install -y --no-install-recommends azure-cli; then
+    echo "Azure CLI installed via Microsoft apt repo."
+  else
+    echo "Azure CLI apt install failed; falling back to pip."
+    pip3 install --no-cache-dir azure-cli
+  fi
+else
+  echo "Could not resolve/download from packages.microsoft.com; installing azure-cli via pip."
+  pip3 install --no-cache-dir azure-cli
+fi
+rm -rf /var/lib/apt/lists/*
+EOF
 
 # ============================================
 # STEP 4: Configure SSH server

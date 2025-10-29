@@ -1,5 +1,6 @@
-# Docker Compose command
-DOCKER_COMPOSE := docker compose
+# Docker Compose command (defaults to classic `docker-compose`, falls back to `docker compose`)
+# You can override via environment: `make DOCKER_COMPOSE="docker compose" up`
+DOCKER_COMPOSE ?= $(shell if command -v docker-compose >/dev/null 2>&1; then echo docker-compose; else echo docker compose; fi)
 
 # Service name from docker-compose.yml
 SERVICE := azdo-agent
@@ -30,8 +31,10 @@ help:
 	  "make docs-install" "Install MkDocs for documentation" \
 	  "make docs-serve" "Serve docs at http://127.0.0.1:8000" \
 	  "make docs-build" "Build static documentation" \
-	  "make docs-clean" "Remove documentation environment"
+	  "make docs-clean" "Remove documentation environment" \
+	  "make compose-cmd" "Show which Compose command is in use"
 	@echo
+	@echo "Using Compose command: $(DOCKER_COMPOSE)"
 
 # ============================================
 # Core Docker Commands
@@ -141,3 +144,8 @@ docs-clean:
 	@echo "Removing documentation environment..."
 	rm -rf $(VENV) site
 	@echo "✓ Documentation cleanup complete"
+
+# Utility: reveal which compose command is selected
+.PHONY: compose-cmd
+compose-cmd:
+	@echo "Using Compose command: $(DOCKER_COMPOSE)"

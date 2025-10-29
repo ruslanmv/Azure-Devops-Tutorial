@@ -1,5 +1,3 @@
-version: "3.9"
-
 # Define our services (containers)
 services:
   # Our main service: the Azure DevOps agent with SSH
