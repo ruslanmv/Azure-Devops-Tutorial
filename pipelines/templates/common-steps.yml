@@ -1,0 +1,23 @@
+# Reusable template for common build steps
+parameters:
+  - name: folderPath
+    type: string
+  - name: buildCommand
+    type: string
+    default: 'echo "No build command specified"'
+
+steps:
+  - script: |
+      echo "=== Building ${{ parameters.folderPath }} ==="
+      cd ${{ parameters.folderPath }}
+      ls -la
+    displayName: 'Show Contents'
+  
+  - script: |
+      cd ${{ parameters.folderPath }}
+      ${{ parameters.buildCommand }}
+    displayName: 'Build ${{ parameters.folderPath }}'
+  
+  - script: |
+      echo "Build completed for ${{ parameters.folderPath }}"
+    displayName: 'Build Complete'

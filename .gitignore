@@ -1,1 +1,55 @@
 /backup
+# ===== SECRETS (MOST IMPORTANT!) =====
+# Never commit environment files with tokens/passwords
+.env
+
+# ===== Python / MkDocs =====
+# Virtual environment
+.venv/
+venv/
+env/
+
+# MkDocs build output
+site/
+
+# ===== IDE and OS =====
+# Visual Studio Code
+.vscode/
+
+# JetBrains IDEs
+.idea/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# ===== Build and Agent Directories =====
+# Node.js
+node_modules/
+
+# .NET
+bin/
+obj/
+*.dll
+*.exe
+
+# Azure Pipelines agent working directories
+_work/
+_agent_work/
+_agent_logs/
+_diag/
+
+# Build outputs
+dist/
+build/
+_build/
+out/
+
+# ===== Temporary Files =====
+*.log
+*.tmp
+*.temp
+*.cache

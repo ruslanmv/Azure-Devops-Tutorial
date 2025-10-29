@@ -1,10 +1,95 @@
+# ============================================
+# Azure-1 Pipeline (Microsoft-Hosted Agent)
+# ============================================
+
+# Pipeline name (shown in UI)
 name: 'Azure-1-$(Date:yyyyMMdd)$(Rev:.r)'
+
+# Trigger on main branch, only when Folder1 or Folder2 changes
 trigger:
-  branches: { include: [ main, develop ] }
-  paths:    { include: [ 'Folder1/**', 'Folder2/**' ], exclude: [ '**/*.md', 'docs/**' ] }
-pool: { vmImage: 'ubuntu-latest' }
+  branches:
+    include:
+      - main
+      - develop
+  paths:
+    include:
+      - 'Folder1/**'
+      - 'Folder2/**'
+    exclude:
+      - '**/*.md'
+      - '**/docs/**'
+
+# Use Microsoft-hosted Ubuntu agent
+pool:
+  vmImage: 'ubuntu-latest'
+
+# Run in a Docker container (optional, but useful)
 container: mcr.microsoft.com/dotnet/sdk:8.0
-steps:
-- checkout: self
-  fetchDepth: 1
-- script: echo "Azure-1 build (hosted)"
+
+# Variables
+variables:
+  buildConfiguration: 'Release'
+
+# Pipeline stages
+stages:
+  - stage: Build
+    displayName: 'Build Stage'
+    jobs:
+      - job: BuildJob
+        displayName: 'Build Azure-1 Applications'
+        steps:
+          # Checkout code
+          - checkout: self
+            fetchDepth: 1
+          
+          # Show environment info
+          - script: |
+              echo "Running on: $(Agent.MachineName)"
+              echo "OS: $(Agent.OS)"
+              echo "Build ID: $(Build.BuildId)"
+              echo "Source Branch: $(Build.SourceBranchName)"
+            displayName: 'Environment Information'
+          
+          # Check .NET SDK (since we're in a container)
+          - script: dotnet --info
+            displayName: 'Check .NET SDK'
+          
+          # Placeholder: Build Folder1
+          - script: |
+              echo "Building Folder1 applications..."
+              cd Folder1
+              # Add your build commands here
+              # Example: dotnet build
+            displayName: 'Build Folder1'
+          
+          # Placeholder: Build Folder2
+          - script: |
+              echo "Building Folder2 applications..."
+              cd Folder2
+              # Add your build commands here
+            displayName: 'Build Folder2'
+          
+          # Placeholder: Run tests
+          - script: |
+              echo "Running tests..."
+              # Example: dotnet test
+            displayName: 'Run Tests'
+          
+          # Publish test results (example)
+          # - task: PublishTestResults@2
+          #   inputs:
+          #     testResultsFormat: 'JUnit'
+          #     testResultsFiles: '**/test-results/*.xml'
+  
+  - stage: Deploy
+    displayName: 'Deploy Stage'
+    dependsOn: Build
+    condition: succeeded()
+    jobs:
+      - job: DeployJob
+        displayName: 'Deploy Applications'
+        steps:
+          - script: |
+              echo "Deploying Azure-1 applications..."
+              echo "This is a placeholder for deployment steps"
+            displayName: 'Deploy'

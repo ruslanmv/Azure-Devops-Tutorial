@@ -1,9 +1,102 @@
+# ============================================
+# Azure-2 Pipeline (Folder3 Only)
+# ============================================
+
 name: 'Azure-2-$(Date:yyyyMMdd)$(Rev:.r)'
+
+# Trigger only on Folder3 changes
 trigger:
-  branches: { include: [ main, develop, 'feature/*' ] }
-  paths:    { include: [ 'Folder3/**' ], exclude: [ '**/*.md' ] }
-pool: { vmImage: 'ubuntu-latest' }
-steps:
-- checkout: self
-  fetchDepth: 1
-- script: echo "Azure-2 build triggered by Folder3 changes"
+  branches:
+    include: [ main, develop, feature/* ]
+  paths:
+    include: [ 'Folder3/**' ]
+    exclude: [ '**/*.md' ]
+
+# Can use either hosted or self-hosted
+pool:
+  vmImage: 'ubuntu-latest'
+  # OR for self-hosted:
+  # name: 'Default'
+
+variables:
+  buildConfiguration: 'Release'
+  folder3Path: 'Folder3'
+
+stages:
+  - stage: Validate
+    displayName: 'Validation Stage'
+    jobs:
+      - job: ValidateJob
+        displayName: 'Validate Folder3'
+        steps:
+          - checkout: self
+            fetchDepth: 1
+          
+          - script: |
+              echo "=== Validating Folder3 Structure ==="
+              ls -la $(folder3Path)
+              echo "Files to process:"
+              find $(folder3Path) -type f
+            displayName: 'Validate Structure'
+          
+          - script: |
+              echo "=== Code Quality Checks ==="
+              # Example: Run linters, format checkers
+              # shellcheck $(folder3Path)/**/*.sh || echo "No shell scripts to check"
+            displayName: 'Quality Checks'
+  
+  - stage: Build
+    displayName: 'Build Stage'
+    dependsOn: Validate
+    condition: succeeded()
+    jobs:
+      - job: BuildJob
+        displayName: 'Build Folder3 Application'
+        steps:
+          - checkout: self
+          
+          - script: |
+              echo "Building Folder3 application..."
+              cd $(folder3Path)
+              # Add your build commands
+              # Examples:
+              # npm install && npm run build
+              # dotnet build
+              # python -m pip install -r requirements.txt
+            displayName: 'Build Application'
+          
+          - script: |
+              echo "Running unit tests..."
+              cd $(folder3Path)
+              # Add your test commands
+              # Examples:
+              # npm test
+              # dotnet test
+              # pytest
+            displayName: 'Run Tests'
+          
+          # Publish artifacts (if needed)
+          - task: PublishBuildArtifacts@1
+            inputs:
+              pathToPublish: '$(folder3Path)/dist'
+              artifactName: 'folder3-artifacts'
+            displayName: 'Publish Artifacts'
+            condition: succeededOrFailed()
+  
+  - stage: Deploy
+    displayName: 'Deployment Stage'
+    dependsOn: Build
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - deployment: DeployJob
+        displayName: 'Deploy Folder3'
+        environment: 'production'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - script: |
+                    echo "Deploying Folder3 to production..."
+                    echo "Build ID: $(Build.BuildId)"
+                    echo "This is a placeholder for deployment steps"
+                  displayName: 'Deploy'

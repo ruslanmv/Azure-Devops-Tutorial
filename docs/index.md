@@ -1,66 +1,24 @@
-# Workshop Utils
+# Complete Azure DevOps Tutorial: From Zero to Production
 
-Welcome to the documentation for **Workshop Utils** — a compact set of Python helpers for safe filesystem operations and time/duration handling.
-These utilities are extracted from `workshop_builder` and designed to be dependency-light, well-tested, and easy to integrate.
+This site is a **fully hands‑on lab** that turns you into a practical Azure DevOps power user.  
+You will:
 
-## Features
+- Create an **Azure DevOps Organization** and project.
+- Spin up a **DevOps Box** (Docker container) that runs an *Azure Pipelines self‑hosted agent* + *SSH server*.
+- Split a monolith repo into two Azure Repos while **preserving Git history**.
+- Build modern **YAML pipelines** with **path filters** and **build validation**.
+- Apply **branch policies, security and best practices**.
 
-- **Filesystem** (`utils.fs`)
-  - `safe_filename()` — convert arbitrary strings into safe, cross-platform filenames.
-  - `ensure_dir()` — idempotent directory creation.
-  - `is_within_dir()` / `resolve_under()` — guard against path traversal.
-  - `atomic_write_text()` / `atomic_write_bytes()` — safe atomic file writes.
-  - `temp_dir()` — temporary directory context manager with cleanup.
-- **Time** (`utils.time`)
-  - `parse_minutes()` — parse human-friendly or ISO-8601-like durations.
-  - `format_minutes_compact()` / `format_hhmm()` — human/clock formatting.
-  - `hours_to_minutes()` / `minutes_to_hours_tuple()` — conversions.
-  - `clamp_minutes()` / `ceil_to_increment()` — utility helpers.
-
-## Quick Start
-
-```bash
-# 1) Install mkdocs (for browsing these docs locally)
-pip install mkdocs
-
-# 2) Serve the docs (from the directory with mkdocs.yml)
-mkdocs serve
-
-# 3) Open your browser at the URL shown (usually http://127.0.0.1:8000/)
-```
-
-> Tip: If you prefer a fancier look, you can install `mkdocs-material` and update the `theme` in `mkdocs.yml`:
->
-> ```bash
-> pip install mkdocs-material
-> ```
->
-> ```yaml
-> theme:
->   name: material
-> ```
-
-## Project Structure (example)
-
-```
-your-project/
-├─ src/
-│  └─ utils/
-│     ├─ __init__.py
-│     ├─ fs.py
-│     └─ time.py
-├─ mkdocs.yml
-└─ docs/
-   └─ (these files)
-```
-
-## Audience
-
-This documentation is intended for:
-- Developers integrating the `utils.fs` and `utils.time` modules.
-- Workshop authors who need safe file handling and robust time parsing.
-- Reviewers and contributors.
+> **Tip:** Work through the labs in order. Each lab includes **step‑by‑step tasks** and a **Solution** section with exact commands.
 
 ---
 
-Continue with **[Installation](installation.md)**.
+## Quickstart
+
+```bash
+# Use with the full repo this docs set accompanies
+cp .env.example .env             # Fill AZP_URL and AZP_TOKEN (PAT)
+make up                          # Start the DevOps Box container
+make logs                        # Watch it register to Azure DevOps
+make ssh                         # devops@localhost -p 2222
+```

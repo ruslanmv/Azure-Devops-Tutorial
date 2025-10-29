@@ -1,12 +1,66 @@
+# ============================================
+# Azure-1 Pipeline (Self-Hosted Agent)
+# ============================================
+
 name: 'Azure-1-SelfHosted-$(Date:yyyyMMdd)$(Rev:.r)'
+
 trigger:
-  branches: { include: [ main, develop ] }
-  paths:    { include: [ 'Folder1/**', 'Folder2/**' ] }
-pool: { name: 'Default' }
+  branches:
+    include: [ main, develop ]
+  paths:
+    include: [ 'Folder1/**', 'Folder2/**' ]
+
+# Use your self-hosted pool
+pool:
+  name: 'Default'  # or your custom pool name
+
+variables:
+  buildConfiguration: 'Release'
+
 steps:
-- checkout: self
-  clean: true
-- script: |
-    echo "Self-hosted on $(Agent.MachineName)"
-    git --version
-    az --version || true
+  # Checkout with clean option
+  - checkout: self
+    clean: true
+  
+  # Show agent information
+  - script: |
+      echo "=== Agent Information ==="
+      echo "Agent Name: $(Agent.Name)"
+      echo "Agent Machine Name: $(Agent.MachineName)"
+      echo "Agent OS: $(Agent.OS)"
+      echo "Working Directory: $(Agent.WorkFolder)"
+      echo "Build Directory: $(Build.SourcesDirectory)"
+      hostname
+      whoami
+    displayName: 'Agent Information'
+  
+  # Check installed tools
+  - script: |
+      echo "=== Installed Tools ==="
+      git --version
+      az --version || echo "Azure CLI not found"
+      docker --version || echo "Docker not found"
+    displayName: 'Check Tools'
+  
+  # Build Folder1
+  - script: |
+      echo "Building Folder1..."
+      cd Folder1
+      ls -la
+      # Your build commands here
+    displayName: 'Build Folder1'
+  
+  # Build Folder2
+  - script: |
+      echo "Building Folder2..."
+      cd Folder2
+      ls -la
+      # Your build commands here
+    displayName: 'Build Folder2'
+  
+  # Cleanup (optional, for disk space management)
+  - script: |
+      echo "Cleaning up..."
+      # Remove temporary build artifacts
+    displayName: 'Cleanup'
+    condition: always()

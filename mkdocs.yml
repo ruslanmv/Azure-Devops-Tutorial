@@ -1,38 +1,36 @@
-site_name: Workshop Utils Docs
-site_description: Documentation for utility helpers (filesystem & time) used in workshop_builder.
-site_author: Your Team
-repo_url: https://example.com/your-repo
+site_name: Azure DevOps Tutorial — From Zero to Production
+site_description: A complete hands-on workshop that takes you from nothing to a production-grade Azure DevOps setup.
 theme:
-  name: mkdocs
+  name: material
+  features:
+    - navigation.sections
+    - navigation.tabs
+    - content.code.copy
 nav:
   - Home: index.md
-  - Installation: installation.md
-  - Getting Started: getting-started.md
-  - Usage: usage.md
-  - Guides:
-      - Safe Filenames: guides/safe-filenames.md
-      - Atomic Writes: guides/atomic-writes.md
-      - Temporary Directories: guides/temp-dirs.md
-      - Durations & Time: guides/durations.md
-  - API Reference:
-      - utils.fs: api/fs.md
-      - utils.time: api/time.md
-  - Recipes: recipes.md
-  - Troubleshooting: troubleshooting.md
-  - FAQ: faq.md
-  - Security: security.md
-  - Configuration: configuration.md
-  - Contributing: contributing.md
-  - Changelog: changelog.md
-  - License: license.md
-plugins:
-  - search
+  - Labs:
+      - "Lab 01 — Prerequisites": labs/01-prereqs.md
+      - "Lab 02 — Create Project & Repos": labs/02-project-and-repos.md
+      - "Lab 03 — Optional: Azure DevOps Server": labs/03-optional-azdo-server.md
+      - "Lab 04 — Self-Hosted Agent (Local Machine)": labs/04-selfhosted-agent-local.md
+      - "Lab 05 — DevOps Box (Docker Agent + SSH)": labs/05-devops-box-docker.md
+      - "Lab 06 — Split HDP into Azure-1 & Azure-2": labs/06-split-hdp-into-azure1-azure-2.md
+      - "Lab 07 — Pipeline for Azure-1": labs/07-pipeline-azure1.md
+      - "Lab 08 — Pipeline for Azure-2": labs/08-pipeline-azure2.md
+      - "Lab 09 — Branch Policies & Best Practices": labs/09-branch-policies-and-best-practices.md
+      - "Lab 10 — Troubleshooting & FAQ": labs/10-troubleshooting.md
 markdown_extensions:
   - admonition
-  - codehilite
   - toc:
       permalink: true
+  - attr_list
+  - def_list
+  - tables
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
 extra:
-  social:
-    - icon: fontawesome/brands/github
-      link: https://example.com/your-repo
+  generator: false
+repo_url: https://dev.azure.com/your-org/HDP-Labs
+repo_name: Azure DevOps
