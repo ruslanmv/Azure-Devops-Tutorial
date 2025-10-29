@@ -1435,6 +1435,7 @@ make build
 docker compose build
 ```
 
+
 This will take 3-5 minutes the first time. Docker is:
 - Downloading Ubuntu 22.04
 - Installing all packages
@@ -1451,7 +1452,7 @@ You'll see output like:
  => [2/8] RUN apt-get update && apt-get install...
  ...
 ```
-
+![](assets/2025-10-29-22-14-29.png)
 **4. Start the container:**
 
 ```bash
@@ -1462,6 +1463,8 @@ docker compose up -d
 ```
 
 The `-d` flag runs it in "detached" mode (background).
+
+![](assets/2025-10-29-22-15-22.png)
 
 **5. Watch the logs:**
 
@@ -1513,6 +1516,8 @@ ssh devops@localhost -p 2222
 
 # Enter the password from your .env file (default: changeMe123)
 ```
+![](assets/2025-10-29-22-17-58.png)
+
 
 You're now inside the container! Try some commands:
 
