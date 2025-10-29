@@ -1,4 +1,4 @@
-# Azure-DevOps-Tutorial 
+# Azure-DevOps-Tutorial
 
 *A complete, hands-on tutorial with ready-to-run code and scripts.*
 
@@ -26,28 +26,54 @@ cd Azure-Devops-Tutorial
 
 ## ⚡ Quick start
 
-> Prereqs: Docker (optional but recommended), Git, and a shell (Bash or PowerShell 7+).
+> Prereqs: Docker (recommended), Git, and a shell (Bash or PowerShell 7+).
 
 ```bash
-cp .env.example .env           # set AZP_URL, AZP_TOKEN, etc.
-make up                        # start the DevOps Box (agent + SSH)
-make docs-serve                # docs at http://127.0.0.1:8000
-make ssh                       # ssh devops@localhost -p 2222
+make env                      # creates .env from template (first time)
+# Edit .env and set AZP_URL, AZP_TOKEN, AZP_POOL, AZP_AGENT_NAME (see below)
+make up                       # start the DevOps Box (agent + SSH)
+make docs-serve               # docs at http://127.0.0.1:8000
+make ssh                      # ssh devops@localhost -p 2222 (password from .env)
 ```
 
-> 💡 Tip: run `make help` to see all available targets.
+> 💡 Tip: `make help` lists all available targets.
 
 ---
 
-## 🎯 Why this tutorial?
+## 🔐 Get your `AZP_TOKEN` (Personal Access Token)
 
-We go beyond checklists and build a **realistic, reusable “DevOps Box”** using Docker: a single container that runs both an **SSH server** and an **Azure Pipelines self-hosted agent**. You get a disposable, VM-like build host you fully control.
+1. Go to **[https://dev.azure.com](https://dev.azure.com)** → sign in.
+2. Click your **avatar → Personal access tokens → New Token**.
+3. Set:
 
-Then we tackle a classic problem: **splitting a monolithic repository** the right way while **preserving Git history**, pushing results into **two Azure Repos**.
+   * **Name**: `devops-box` (any label)
+   * **Organization**: the same org as your `AZP_URL`
+   * **Expiration**: choose a reasonable lifetime
+   * **Scopes**: ✅ **Agent Pools (Read & manage)** *(required for the agent)*
+4. **Create** and **copy** the token (you will only see it once).
+5. Open `.env` and set:
 
-Finally, we wire **YAML pipelines** that implement **path filters**, **branch policies**, and **secure-by-default** configs.
+```ini
+AZP_URL=https://dev.azure.com/<your-org>
+AZP_TOKEN=<PASTE_YOUR_TOKEN>
+AZP_POOL=Default
+AZP_AGENT_NAME=docker-agent-1
+AZP_WORK_DIR=_work
+# Optional (recommended): enable key-based SSH
+# SSH_PUBLIC_KEY=ssh-ed25519 AAAA... user@host
+```
 
-Everything here is **copy-pasteable** and **works locally**.
+> 🔒 Keep your PAT **secret**. Do **not** commit `.env`.
+
+---
+
+## 🧩 Components at a glance
+
+* **Docker image**: Azure Pipelines agent + OpenSSH + `supervisord`
+* **`.env`**: configuration for agent registration & SSH
+* **`/scripts`**: monorepo split helpers (history-preserving)
+* **`/pipelines`**: sample YAML pipelines with path filters
+* **`/docs`**: MkDocs site for guidance and API notes
 
 ---
 
@@ -70,56 +96,103 @@ HDP (monorepo)
 
 ---
 
-## 🧩 Components at a glance
-
-* **Docker image**: contains Azure Pipelines agent + OpenSSH + `supervisord`
-* **`.env`**: config for agent registration & SSH
-* **`/scripts`**: monorepo split helpers (history-preserving)
-* **`/pipelines`**: sample YAML pipelines with path filters
-* **`/docs`**: MkDocs site for guidance and API notes
-
----
-
 ## 🔧 Configuration (edit `.env`)
 
-| Variable         | Example                          | Description                                        |
-| ---------------- | -------------------------------- | -------------------------------------------------- |
-| `AZP_URL`        | `https://dev.azure.com/your-org` | Your Azure DevOps organization URL                 |
-| `AZP_TOKEN`      | `azdopat_********`               | Personal Access Token (Agent Pools: Read & Manage) |
-| `AZP_POOL`       | `Default`                        | Agent pool name                                    |
-| `AZP_AGENT_NAME` | `devops-box-01`                  | Display name of the agent                          |
-| `SSH_PUBLIC_KEY` | `ssh-ed25519 AAAA... user@host`  | Optional: enable key-based SSH into the container  |
+| Variable         | Example                                | Description                                    |
+| ---------------- | -------------------------------------- | ---------------------------------------------- |
+| `AZP_URL`        | `https://dev.azure.com/your-org`       | Your Azure DevOps **organization** URL         |
+| `AZP_TOKEN`      | `azdopat_********`                     | PAT with scope **Agent Pools (Read & manage)** |
+| `AZP_POOL`       | `Default`                              | Agent pool name                                |
+| `AZP_AGENT_NAME` | `devops-box-01`                        | Display name of the agent                      |
+| `AZP_WORK_DIR`   | `_work`                                | Agent working directory inside the container   |
+| `SSH_PUBLIC_KEY` | `ssh-ed25519 AAAA... user@host` (opt.) | Enable key-based SSH into the container        |
+| `SSH_PASSWORD`   | `changeMe123` (dev only)               | Password for `devops@localhost -p 2222`        |
 
-> 🔒 **Security note**: Keep your PAT **secret**. Never commit `.env` to source control.
+> 🔒 **Security note**: Use the smallest scope needed, rotate tokens, and never commit secrets.
 
 ---
 
-## 🚀 Make targets
+## 🚀 Useful Make targets
 
 ```bash
-make up            # Build & start the DevOps Box
-make down          # Stop & remove the container
-make logs          # Tail supervisord logs
-make ssh           # SSH into the box (devops@localhost -p 2222)
-make docs-serve    # Serve local docs (MkDocs)
-make clean         # Remove local artifacts
+make env          # create .env from template
+make build        # build the Docker image
+make up           # start container in background
+make down         # stop & remove container
+make restart      # restart the container
+make logs         # tail logs (Ctrl+C to exit)
+make ps           # show running containers
+make ssh          # SSH into the container (devops@localhost -p 2222)
+make docs-serve   # serve local docs (MkDocs)
+make clean        # stop & remove container & volumes
 ```
 
 ---
 
-## ✅ Prerequisites
+## 🌐 See the agent **online** in Azure DevOps
 
-* A **Microsoft account** (e.g., Outlook/Hotmail)
-* **Git** and a shell (PowerShell 7+ or Bash)
-* *(Optional)* **Docker** to run the self-hosted agent container
-* Azure DevOps **organization**
-1. Go to **[https://dev.azure.com](https://dev.azure.com)** and sign in.
-2. Click **New organization** (or it will prompt you on first sign-in).
-3. Pick a **name** (e.g., `yourname-devops`) and a **region** → **Create**.
+1. Open **[https://dev.azure.com](https://dev.azure.com)** → your **Organization** → your **Project**.
+2. **Project settings** (bottom-left) → **Agent pools**.
+3. Open your pool (e.g., `Default`) and verify agent **`AZP_AGENT_NAME`** is **Online**.
 
-> You now have a personal Azure DevOps **organization**. Everything below happens inside it.
+> If it’s **Offline**, double-check `.env` (especially `AZP_TOKEN` and `AZP_URL`) and run `make down && make up`, then `make logs`.
 
 ---
+
+## 🧭 Access the container
+
+**SSH (recommended):**
+
+```bash
+make ssh
+# == ssh devops@localhost -p 2222
+```
+
+**Docker exec (no SSH):**
+
+```bash
+docker compose exec azdo-agent bash
+# or:
+docker exec -it azdo-agent bash
+```
+
+> ℹ️ `AZP_*` env vars are injected into the container’s **startup** process; your SSH shell won’t print them with `printenv`. That’s expected.
+
+---
+
+## 🧪 Optional: quick pipeline smoke test
+
+Create `.azure-pipelines/selfhosted-smoke.yml`:
+
+```yaml
+trigger: none
+pool:
+  name: Default        # or your pool
+steps:
+- script: |
+    echo "Hello from $(Agent.Name) on $(Agent.MachineName)"
+    uname -a || ver
+  displayName: "Self-hosted agent smoke"
+```
+
+In Azure DevOps: **Pipelines → New pipeline → Existing Azure Pipelines YAML file** → select this file → **Run**.
+
+---
+
+## 🆘 Troubleshooting
+
+* **Agent not registering**: ensure `AZP_TOKEN` is a real PAT with **Agent Pools (Read & manage)**, then `make down && make up`.
+* **SSH refused**: `make ps` should show `0.0.0.0:2222->22/tcp`; if not, `make restart`.
+* **Host key changed**: `ssh-keygen -R [localhost]:2222`.
+* **Supervisor checks (host side)**:
+
+  ```bash
+  docker compose exec -u root azdo-agent supervisorctl status
+  docker compose exec -u root azdo-agent tail -n 200 /var/log/supervisor/supervisord.log
+  ```
+
+
+
 
 ## 📚 Table of Contents
 
@@ -278,126 +351,105 @@ VS Code is a fantastic editor for working with YAML pipelines and Git.
 
 ### Account Requirements
 
-You'll need a **Microsoft account** (Outlook, Hotmail, or Xbox Live email). If you don't have one:
+You’ll need a **Microsoft account** (Outlook/Hotmail/Xbox). If you don’t have one:
 
-1. Go to [account.microsoft.com](https://account.microsoft.com/)
-2. Click "Create a Microsoft account"
-3. Follow the steps to create your account
+1. Go to **[account.microsoft.com](https://account.microsoft.com/)**  
+2. Click **Create a Microsoft account**  
+3. Follow the prompts and verify your email  
 
-This account will be completely free for our purposes.
+> ✅ This is free and is all you need to use Azure DevOps’ free tier.
 
 ---
 
 ## Setting Up Your Azure DevOps Organization
 
-An **organization** is your top-level container in Azure DevOps. It holds all your projects, repositories, pipelines, and team members. Think of it as your company's DevOps workspace.
+An **Organization** is your top-level container in Azure DevOps. It holds your projects, repos, pipelines, artifacts, and users.
 
-### Step 1: Create Your Organization
+### Step 1 — Create your Organization
 
-1. **Navigate to Azure DevOps**
-   - Open your browser and go to [https://dev.azure.com](https://dev.azure.com)
-   - Sign in with your Microsoft account
+1. **Open Azure DevOps**  
+   Go to **[https://dev.azure.com](https://dev.azure.com/)** and sign in with your Microsoft account.
 
-2. **Create a new organization**
-   - If this is your first time, Azure DevOps will automatically prompt you to create an organization
-   - If you already have organizations, click the **Azure DevOps** logo in the top-left, then **+ New organization**
+2. **Create a new Organization**  
+   - First-time users are prompted automatically.  
+   - Otherwise: click the **Azure DevOps** logo (top-left) → **+ New organization**.
 
-3. **Configure your organization**
-   - **Organization name**: Choose something descriptive like `yourname-devops` or `mycompany-dev`
-     - This name must be globally unique
-     - It will be part of your URL: `https://dev.azure.com/yourname-devops`
-   - **Region**: Select the region closest to you (this affects where your data is stored)
-   - Click **Continue**
+3. **Configure it**  
+   - **Organization name** (globally unique): e.g. `yourname-devops`  
+     - Your URL will be: `https://dev.azure.com/yourname-devops`  
+   - **Region**: pick the closest region (controls data residency)  
+   - Click **Continue**.
 
-4. **Verify creation**
-   - You should now see the organization welcome screen
-   - Your organization URL will be: `https://dev.azure.com/YOUR-ORG-NAME`
-   - Save this URL - you'll need it multiple times!
+4. **Confirm**  
+   - You’ll land on your new org’s welcome screen.  
+   - Save your org URL — we’ll use it in configuration and `.env`.
 
-### Understanding Organization Settings
-
-Organizations have powerful settings for managing your entire DevOps environment:
-
-- **Users**: Add team members and manage permissions
-- **Billing**: Configure paid features (not needed for this tutorial)
-- **Security**: Set up security policies and permissions
-- **Agent pools**: Manage build agents (we'll explore this in detail later)
-- **Extensions**: Add marketplace extensions to enhance functionality
+> 🧭 **Where to find org-level settings later**:  
+> **Organization settings** (bottom-left) → Users, Billing, Security, **Agent pools**, Policies, Extensions.
 
 ---
 
 ## Understanding Personal Access Tokens (PATs)
 
-Personal Access Tokens are the keys to your Azure DevOps kingdom. They're secure, scoped credentials that allow applications (like our self-hosted agent) to authenticate with Azure DevOps.
+**Personal Access Tokens** (PATs) are scoped secrets you use for non-interactive authentication (e.g., registering a self-hosted agent).
 
-### Why PATs Instead of Passwords?
+### Why use PATs?
 
-- **Scoped permissions**: You can limit exactly what each token can do
-- **Revocable**: Easily revoke a token without changing your password
-- **Auditable**: Track which token accessed what
-- **Secure**: Tokens are encrypted and can have expiration dates
+- **Least privilege**: grant only what’s needed  
+- **Revocable**: kill a single token without changing your password  
+- **Auditable**: see which token did what  
+- **Expiring**: force periodic rotation
 
-### Creating Your PAT
+### Create a PAT (for the self-hosted agent)
 
-Let's create a PAT for our self-hosted agent. This token will allow our Docker container to register as a build agent and access repositories.
+We’ll create a PAT used by the container at startup to register the agent.
 
-**Step-by-step instructions:**
+1. **Open the PAT page**  
+   - In Azure DevOps, click your **profile avatar** (top-right) → **Personal access tokens** → **+ New Token**.
 
-1. **Access PAT Settings**
-   - In Azure DevOps, click on your **profile icon** (top-right corner)
-   - Select **Personal access tokens**
-   - Click **+ New Token**
+2. **Configure**  
+   - **Name**: `devops-box-agent`  
+   - **Organization**: select your org (e.g., `yourname-devops`)  
+   - **Expiration**: e.g., **90 days** for a lab (shorter is safer in prod)  
+   - **Scopes**: click **Show all scopes**, then select **only what you need**:
+     - **Minimum required** for agent registration:  
+       - ✅ **Agent Pools → Read & manage**
+     - **Optional** (only if you deliberately want the *agent itself* to push/clone with your PAT — usually not needed because pipelines use their own OAuth token):  
+       - **Code → Read & write**  
+       - **Project and Team → Read**
 
-2. **Configure the Token**
-   - **Name**: `devops-box-agent` (descriptive name for later identification)
-   - **Organization**: Select your organization from the dropdown
-   - **Expiration**: Choose **90 days** (recommended for learning)
-     - For production, use shorter periods and rotate regularly
-   - **Scopes**: Click **Show all scopes** at the bottom
+3. **Create and copy**  
+   - Click **Create** and **copy the token now** — it is shown **once**.  
+   - Store it safely (password manager/Keychain).
 
-3. **Select Required Scopes**
-   
-   This is critical! The agent needs specific permissions:
+4. **Put it in `.env`** (on your host machine, next to the repo):
+   ```ini
+   AZP_URL=https://dev.azure.com/<your-org>
+   AZP_TOKEN=<PASTE_YOUR_TOKEN_HERE>
+   AZP_POOL=Default
+   AZP_AGENT_NAME=docker-agent-1
+   AZP_WORK_DIR=_work
+   ```
 
-   - **Agent Pools**: 
-     - ✅ Read & manage
-     - Why: To register itself and receive build jobs
-   
-   - **Code**: 
-     - ✅ Read & write
-     - Why: To clone repositories and push changes if needed
-   
-   - **Project and Team**: 
-     - ✅ Read
-     - Why: To access project information
-
-   Leave all other scopes **unchecked** (principle of least privilege)
-
-4. **Create and Save**
-   - Click **Create**
-   - **CRITICAL**: Copy the token immediately!
-   - The token displays only once - you cannot retrieve it later
-   - Paste it somewhere secure (we'll use it in our `.env` file soon)
+> 🔎 **Verify online**:
+> **Project settings → Agent pools →** open your pool (e.g., `Default`) → agent **docker-agent-1** should be **Online**.
 
 ### PAT Security Best Practices
 
-```
-⚠️ SECURITY WARNINGS:
+> ⚠️ **Security**
+>
+> 1. Never commit PATs to Git (keep `.env` untracked).
+> 2. Never share PATs in chat/email.
+> 3. Use **smallest scopes** possible.
+> 4. Set **expiration** and rotate regularly.
+> 5. Prefer pipeline-provided OAuth tokens for repo access inside jobs.
+> 6. Store PATs in a password manager or secret store.
 
-1. NEVER commit PATs to Git repositories
-2. NEVER share PATs in chat or email
-3. NEVER use the same PAT for multiple purposes
-4. ALWAYS use the minimum required scopes
-5. ALWAYS set expiration dates
-6. Store PATs in secure locations (.env files, Key Vault, password managers)
-```
+**If a PAT leaks:**
 
-If you accidentally expose a PAT:
-1. Immediately revoke it in Azure DevOps (Personal access tokens → revoke)
-2. Create a new token with a different value
-3. Rotate all systems using the old token
-
----
+1. **Revoke** it immediately (Profile → Personal access tokens).
+2. **Create** a new token with a new value.
+3. **Update** systems that used the old token and rotate secrets.
 
 ## Creating Your First Project
 
