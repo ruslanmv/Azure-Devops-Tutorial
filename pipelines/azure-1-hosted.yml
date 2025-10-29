@@ -1,0 +1,10 @@
+name: 'Azure-1-$(Date:yyyyMMdd)$(Rev:.r)'
+trigger:
+  branches: { include: [ main, develop ] }
+  paths:    { include: [ 'Folder1/**', 'Folder2/**' ], exclude: [ '**/*.md', 'docs/**' ] }
+pool: { vmImage: 'ubuntu-latest' }
+container: mcr.microsoft.com/dotnet/sdk:8.0
+steps:
+- checkout: self
+  fetchDepth: 1
+- script: echo "Azure-1 build (hosted)"

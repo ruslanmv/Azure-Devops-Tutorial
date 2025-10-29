@@ -5,7 +5,7 @@ ARG USERNAME=devops
 ARG USER_UID=1000
 ARG USER_GID=1000
 
-RUN apt-get update &&     apt-get install -y --no-install-recommends       ca-certificates curl jq git apt-transport-https gnupg lsb-release       openssh-server sudo unzip supervisor iproute2 dnsutils vim wget &&     rm -rf /var/lib/apt/lists/*
+RUN apt-get update &&     apt-get install -y --no-install-recommends       ca-certificates curl wget jq git unzip vim       apt-transport-https gnupg lsb-release iproute2 dnsutils       openssh-server sudo supervisor &&     rm -rf /var/lib/apt/lists/*
 
 RUN groupadd --gid ${USER_GID} ${USERNAME} &&     useradd  --uid ${USER_UID} --gid ${USER_GID} -m ${USERNAME} &&     echo "${USERNAME} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 

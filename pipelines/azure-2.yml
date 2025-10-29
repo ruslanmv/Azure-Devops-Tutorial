@@ -1,9 +1,9 @@
+name: 'Azure-2-$(Date:yyyyMMdd)$(Rev:.r)'
 trigger:
-  branches: { include: [ main ] }
-  paths:    { include: [ 'Folder3/*' ] }
-
-pool:
-  vmImage: 'ubuntu-latest'
-
+  branches: { include: [ main, develop, 'feature/*' ] }
+  paths:    { include: [ 'Folder3/**' ], exclude: [ '**/*.md' ] }
+pool: { vmImage: 'ubuntu-latest' }
 steps:
-- script: echo "Hello from Azure-2 (Folder3)"
+- checkout: self
+  fetchDepth: 1
+- script: echo "Azure-2 build triggered by Folder3 changes"

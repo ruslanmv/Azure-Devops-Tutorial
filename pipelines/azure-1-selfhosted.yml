@@ -1,0 +1,12 @@
+name: 'Azure-1-SelfHosted-$(Date:yyyyMMdd)$(Rev:.r)'
+trigger:
+  branches: { include: [ main, develop ] }
+  paths:    { include: [ 'Folder1/**', 'Folder2/**' ] }
+pool: { name: 'Default' }
+steps:
+- checkout: self
+  clean: true
+- script: |
+    echo "Self-hosted on $(Agent.MachineName)"
+    git --version
+    az --version || true
