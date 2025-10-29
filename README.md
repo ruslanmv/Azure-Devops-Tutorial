@@ -390,7 +390,7 @@ An **Organization** is your top-level container in Azure DevOps. It holds your p
 ---
 
 ## Understanding Personal Access Tokens (PATs)
-
+![](assets/2025-10-29-21-46-51.png)
 **Personal Access Tokens** (PATs) are scoped secrets you use for non-interactive authentication (e.g., registering a self-hosted agent).
 
 ### Why use PATs?
@@ -406,6 +406,11 @@ We’ll create a PAT used by the container at startup to register the agent.
 
 1. **Open the PAT page**  
    - In Azure DevOps, click your **profile avatar** (top-right) → **Personal access tokens** → **+ New Token**.
+
+
+![](assets/2025-10-29-21-47-32.png)
+
+![](assets/2025-10-29-21-48-50.png)
 
 2. **Configure**  
    - **Name**: `devops-box-agent`  
